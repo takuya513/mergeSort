@@ -1,6 +1,7 @@
 package mergeSort;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -29,7 +30,8 @@ public class ParallelMergeSort<E extends Comparable> extends MergeSort<E> {
 		this.array = array;
 
 		final List<Callable<Object>> workers = new ArrayList<Callable<Object>>(threadsNum);
-		workers.add(Executors.callable(new PartitionWorker()));
+
+		partition(0,array.length - 1);
 		for(int i = 1;i < threadsNum;i++)
 			workers.add(Executors.callable(new SortWorker()));
 
@@ -51,15 +53,13 @@ public class ParallelMergeSort<E extends Comparable> extends MergeSort<E> {
 	}
 
 	class SortWorker implements Runnable {
+		LinkedList<E> buff = new LinkedList<E>();
 		public void run() {
 
-			while(fixTimes.get() < array.length * 2){
+			while(true){
+				if(tasks.size() <= 0) break;
 				final ArraysRange arraysRange = tasks.poll();
-//				System.out.println(Thread.currentThread().getName()+"  left : "+arraysRange.left+"  right : "+arraysRange.right);
-//				MyArrayUtil.print(array, arraysRange.left, arraysRange.right);
-				fixTimes.incrementAndGet();
-
-				merge(arraysRange.left,arraysRange.mid,arraysRange.right);
+				merge(arraysRange.left,arraysRange.mid,arraysRange.right,buff);
 //				MyArrayUtil.print(array, arraysRange.left, arraysRange.right);
 			}
 		}
@@ -78,9 +78,21 @@ public class ParallelMergeSort<E extends Comparable> extends MergeSort<E> {
 		tasks.offer(new ArraysRange(left,mid,right));
 	}
 
-	@Override
-	public synchronized void merge(int left,int mid,int right){
-		super.merge(left, mid, right);
+	public synchronized void merge(int left,int mid,int right,LinkedList<E> buff){
+		//buff.clear();  //buff用のリストを初期化しておく.修正
+		int i = left,j = mid + 1;
+
+		while(i <= mid && j <= right) {
+			if(array[i].compareTo(array[j]) < 0){
+				buff.add(array[i]); i++;
+			}else{
+				buff.add(array[j]); j++;
+			}
+		}
+
+		while(i <= mid) { buff.add(array[i]); i++;}
+		while(j <= right) { buff.add(array[j]); j++;}
+		for(i = left;i <= right; i++){ array[i] = buff.remove(0);}
 	}
 
 	static class ArraysRange {
