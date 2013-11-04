@@ -32,7 +32,7 @@ public class ParallelMergeSort<E extends Comparable> extends MergeSort<E> {
 		final List<Callable<Object>> workers = new ArrayList<Callable<Object>>(threadsNum);
 
 		partition(0,array.length - 1);
-		for(int i = 1;i < threadsNum;i++)
+		for(int i = 0;i < threadsNum;i++)
 			workers.add(Executors.callable(new SortWorker()));
 
 		try {
@@ -44,22 +44,12 @@ public class ParallelMergeSort<E extends Comparable> extends MergeSort<E> {
 		executor.shutdown();
 	}
 
-	class PartitionWorker implements Runnable {
-		public void run() {
-//			System.out.println(Thread.currentThread().getName() + "  partition Start");
-			partition(0,array.length - 1);
-//			System.out.println(Thread.currentThread().getName() +    "  partition End");
-		}
-	}
 
 	class SortWorker implements Runnable {
-		LinkedList<E> buff = new LinkedList<E>();
 		public void run() {
-
-			while(true){
-				if(tasks.size() <= 0) break;
+			while(tasks.size() > 0){
 				final ArraysRange arraysRange = tasks.poll();
-				merge(arraysRange.left,arraysRange.mid,arraysRange.right,buff);
+				merge(arraysRange.left,arraysRange.mid,arraysRange.right,new Object[arraysRange.right - arraysRange.left+2]);
 //				MyArrayUtil.print(array, arraysRange.left, arraysRange.right);
 			}
 		}
@@ -78,22 +68,26 @@ public class ParallelMergeSort<E extends Comparable> extends MergeSort<E> {
 		tasks.offer(new ArraysRange(left,mid,right));
 	}
 
-	public synchronized void merge(int left,int mid,int right,LinkedList<E> buff){
-		//buff.clear();  //buff用のリストを初期化しておく.修正
-		int i = left,j = mid + 1;
+	@SuppressWarnings("unchecked")
+	public  void merge(int left,int mid,int right,Object[] buff){
+		int i = left,j = mid + 1,k = 0;
+		//Object[] buff = buff2;
 
 		while(i <= mid && j <= right) {
-			if(array[i].compareTo(array[j]) < 0){
-				buff.add(array[i]); i++;
-			}else{
-				buff.add(array[j]); j++;
-			}
+			if(array[i].compareTo(array[j]) < 0)
+				buff[k++] = array[i++];
+			else
+				buff[k++] = array[j++];
 		}
 
-		while(i <= mid) { buff.add(array[i]); i++;}
-		while(j <= right) { buff.add(array[j]); j++;}
-		for(i = left;i <= right; i++){ array[i] = buff.remove(0);}
+		while(i <= mid)
+			buff[k++] = array[i++];
+		while(j <= right)
+			buff[k++] = array[j++];
+		for(i = left;i <= right; i++)
+			array[i] = (E) buff[i - left];
 	}
+
 
 	static class ArraysRange {
 		final int left,mid,right;
