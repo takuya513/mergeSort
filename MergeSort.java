@@ -28,21 +28,24 @@ public class MergeSort<E extends Comparable> implements Sort<E>{
 		merge(left,mid,right);
 	}
 
-	public void merge(int left,int mid,int right){
-		//buff.clear();  //buff用のリストを初期化しておく.修正
-		int i = left,j = mid + 1;
+	@SuppressWarnings("unchecked")
+	public  void merge(int left,int mid,int right){
+		int i = left,j = mid + 1,k = 0;
+		Object[] buff = new Object[right - left+2];
 
 		while(i <= mid && j <= right) {
-			if(array[i].compareTo(array[j]) < 0){
-				buff.add(array[i]); i++;
-			}else{
-				buff.add(array[j]); j++;
-			}
+			if(array[i].compareTo(array[j]) < 0)
+				buff[k++] = array[i++];
+			else
+				buff[k++] = array[j++];
 		}
 
-		while(i <= mid) { buff.add(array[i]); i++;}
-		while(j <= right) { buff.add(array[j]); j++;}
-		for(i = left;i <= right; i++){ array[i] = buff.remove(0);}
+		while(i <= mid)
+			buff[k++] = array[i++];
+		while(j <= right)
+			buff[k++] = array[j++];
+		for(i = left;i <= right; i++)
+			array[i] = (E) buff[i - left];
 	}
 
 }
